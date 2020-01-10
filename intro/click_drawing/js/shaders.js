@@ -1,12 +1,10 @@
 var VertexShader = function() {
-    //TODO: load shader program resource
     return `
-		attribute vec2 vertexPosition;
-		attribute vec3 vertexColor;
+		attribute vec2 vertexPosition;	
 		varying vec3 fragColor;
 
 		void main(){
-			fragColor = vertexColor;
+			fragColor = vec3(vertexPosition, 0.5);
 			gl_Position = vec4(vertexPosition, 0, 1);
 		}
 	`
