@@ -45,7 +45,7 @@ var Draw = function() {
 	gl.enable(gl.DEPTH_TEST);
 	gl.useProgram(program);
 	gl.drawArrays(gl.TRIANGLES, 0, vertices_number);
-	gl.drawArrays(gl.POINTS, 0, vertices_number);
+	gl.drawArrays(gl.POINTS, 1, vertices_number);
 	gl.drawArrays(gl.LINE_STRIP, 0, vertices_number);
 }
 
