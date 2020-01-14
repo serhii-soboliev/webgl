@@ -53,80 +53,40 @@ function main() {
         webglUtils.resizeCanvasToDisplaySize(gl.canvas);
 
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-
-        // Clear the canvas AND the depth buffer.
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-        // Turn on culling. By default backfacing triangles
-        // will be culled.
         gl.enable(gl.CULL_FACE);
-
-        // Enable the depth buffer
         gl.enable(gl.DEPTH_TEST);
-
-        // Tell it to use our program (pair of shaders)
         gl.useProgram(program);
-
-        // Turn on the position attribute
         gl.enableVertexAttribArray(positionLocation);
-
-        // Bind the position buffer.
         gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-
-        // Tell the position attribute how to get data out of positionBuffer (ARRAY_BUFFER)
-        var size = 3;          // 3 components per iteration
-        var type = gl.FLOAT;   // the data is 32bit floats
-        var normalize = false; // don't normalize the data
-        var stride = 0;        // 0 = move forward size * sizeof(type) each iteration to get the next position
-        var offset = 0;        // start at the beginning of the buffer
-        gl.vertexAttribPointer(
-            positionLocation, size, type, normalize, stride, offset);
-
-        // Turn on the color attribute
+        gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(colorLocation);
-
-        // Bind the color buffer.
         gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+        gl.vertexAttribPointer(colorLocation, 3, gl.UNSIGNED_BYTE, true, 0, 0);
 
-        // Tell the attribute how to get data out of colorBuffer (ARRAY_BUFFER)
-        var size = 3;                 // 3 components per iteration
-        var type = gl.UNSIGNED_BYTE;  // the data is 8bit unsigned values
-        var normalize = true;         // normalize the data (convert from 0-255 to 0-1)
-        var stride = 0;               // 0 = move forward size * sizeof(type) each iteration to get the next position
-        var offset = 0;               // start at the beginning of the buffer
-        gl.vertexAttribPointer(
-            colorLocation, size, type, normalize, stride, offset);
+        let aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
+        let zNear = 1;
+        let zFar = 3000;
+        let projectionMatrix = m4.perspective(fieldOfViewRadians, aspect, zNear, zFar);
 
-        // Compute the projection matrix
-        var aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
-        var zNear = 1;
-        var zFar = 3000;
-        var projectionMatrix = m4.perspective(fieldOfViewRadians, aspect, zNear, zFar);
+        let cameraTarget = [0, -100, 0];
+        let cameraPosition = [500, 300, 500];
+        let up = [0, 1, 0];
 
-        var cameraTarget = [0, -100, 0];
-        var cameraPosition = [500, 300, 500];
-        var up = [0, 1, 0];
+        let cameraMatrix = m4.lookAt(cameraPosition, cameraTarget, up);
 
-        // Compute the camera's matrix using look at.
-        var cameraMatrix = m4.lookAt(cameraPosition, cameraTarget, up);
+        let viewMatrix = m4.inverse(cameraMatrix);
+        let viewProjectionMatrix = m4.multiply(projectionMatrix, viewMatrix);
 
-        // Make a view matrix from the camera matrix.
-        var viewMatrix = m4.inverse(cameraMatrix);
-
-        // create a viewProjection matrix. This will both apply perspective
-        // AND move the world so that the camera is effectively the origin
-        var viewProjectionMatrix = m4.multiply(projectionMatrix, viewMatrix);
-
-        // Draw heads in a grid
-        var deep = 5;
-        var across = 5;
-        for (var zz = 0; zz < deep; ++zz) {
-            var v = zz / (deep - 1);
-            var z = (v - .5) * deep * 150;
-            for (var xx = 0; xx < across; ++xx) {
-                var u = xx / (across - 1);
-                var x = (u - .5) * across * 150;
-                var matrix = m4.lookAt([x, 0, z], target, up);
+        let deep = 5;
+        let across = 5;
+        for (let zz = 0; zz < deep; ++zz) {
+            let v = zz / (deep - 1);
+            let z = (v - .5) * deep * 150;
+            for (let xx = 0; xx < across; ++xx) {
+                let u = xx / (across - 1);
+                let x = (u - .5) * across * 150;
+                let matrix = m4.lookAt([x, 0, z], target, up);
                 drawHead(matrix, viewProjectionMatrix, matrixLocation, numElements);
             }
         }
@@ -135,48 +95,40 @@ function main() {
     }
 
     function drawHead(matrix, viewProjectionMatrix, matrixLocation, numElements) {
-        // multiply that with the viewProjecitonMatrix
         matrix = m4.multiply(viewProjectionMatrix, matrix);
-
-        // Set the matrix.
         gl.uniformMatrix4fv(matrixLocation, false, matrix);
-
-        // Draw the geometry.
-        var primitiveType = gl.TRIANGLES;
-        var offset = 0;
         gl.drawArrays(gl.TRIANGLES, 0, numElements);
     }
 }
 
-function subtractVectors(a, b) {
-    return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
-}
+const vec = {
+    subtractVectors: function(a, b) {
+        return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+    },
 
-function normalize(v) {
-    var length = Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
-    // make sure we don't divide by 0.
-    if (length > 0.00001) {
-        return [v[0] / length, v[1] / length, v[2] / length];
-    } else {
-        return [0, 0, 0];
+    normalize: function(v) {
+        let length = Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+        if (length > 0.00001) {
+            return [v[0] / length, v[1] / length, v[2] / length];
+        } else {
+            return [0, 0, 0];
+        }
+    },
+
+    cross: function(a, b) {
+        return [a[1] * b[2] - a[2] * b[1],
+            a[2] * b[0] - a[0] * b[2],
+            a[0] * b[1] - a[1] * b[0]];
     }
-}
-
-function cross(a, b) {
-    return [a[1] * b[2] - a[2] * b[1],
-        a[2] * b[0] - a[0] * b[2],
-        a[0] * b[1] - a[1] * b[0]];
-}
+};
 
 
-
-var m4 = {
+const m4 = {
 
     lookAt: function(cameraPosition, target, up) {
-        var zAxis = normalize(
-            subtractVectors(cameraPosition, target));
-        var xAxis = normalize(cross(up, zAxis));
-        var yAxis = normalize(cross(zAxis, xAxis));
+        let zAxis = vec.normalize(vec.subtractVectors(cameraPosition, target));
+        let xAxis = vec.normalize(vec.cross(up, zAxis));
+        let yAxis = vec.normalize(vec.cross(zAxis, xAxis));
 
         return [
             xAxis[0], xAxis[1], xAxis[2], 0,
@@ -190,8 +142,8 @@ var m4 = {
     },
 
     perspective: function(fieldOfViewInRadians, aspect, near, far) {
-        var f = Math.tan(Math.PI * 0.5 - 0.5 * fieldOfViewInRadians);
-        var rangeInv = 1.0 / (near - far);
+        const f = Math.tan(Math.PI * 0.5 - 0.5 * fieldOfViewInRadians);
+        const rangeInv = 1.0 / (near - far);
 
         return [
             f / aspect, 0, 0, 0,
@@ -202,7 +154,6 @@ var m4 = {
     },
 
     projection: function(width, height, depth) {
-        // Note: This matrix flips the Y axis so 0 is at the top.
         return [
             2 / width, 0, 0, 0,
             0, -2 / height, 0, 0,
@@ -286,8 +237,8 @@ var m4 = {
     },
 
     yRotation: function(angleInRadians) {
-        var c = Math.cos(angleInRadians);
-        var s = Math.sin(angleInRadians);
+        const c = Math.cos(angleInRadians);
+        const s = Math.sin(angleInRadians);
 
         return [
             c, 0, -s, 0,
@@ -298,8 +249,8 @@ var m4 = {
     },
 
     zRotation: function(angleInRadians) {
-        var c = Math.cos(angleInRadians);
-        var s = Math.sin(angleInRadians);
+        const c = Math.cos(angleInRadians);
+        const s = Math.sin(angleInRadians);
 
         return [
             c, s, 0, 0,
@@ -436,13 +387,11 @@ var m4 = {
 
 };
 
-
-// Fill the buffer with the values that define a letter 'F'.
 function setGeometry(gl) {
-    var positions = new Float32Array(HeadData.positions);
-    var matrix = m4.multiply(m4.scaling(6, 6, 6), m4.yRotation(Math.PI));
-    for (var ii = 0; ii < positions.length; ii += 3) {
-        var vector = m4.vectorMultiply([positions[ii + 0], positions[ii + 1], positions[ii + 2], 1], matrix);
+    let positions = new Float32Array(HeadData.positions);
+    let matrix = m4.multiply(m4.scaling(6, 6, 6), m4.yRotation(Math.PI));
+    for (let ii = 0; ii < positions.length; ii += 3) {
+        let vector = m4.vectorMultiply([positions[ii + 0], positions[ii + 1], positions[ii + 2], 1], matrix);
         positions[ii + 0] = vector[0];
         positions[ii + 1] = vector[1];
         positions[ii + 2] = vector[2];
@@ -452,19 +401,17 @@ function setGeometry(gl) {
     return positions.length / 3;
 }
 
-// Fill the buffer with colors for the 'F'.
-function setColors(gl, numElements) {
-    var normals = HeadData.normals;
-    var colors = new Uint8Array(normals.length);
-    var offset = 0;
-    for (var ii = 0; ii < colors.length; ii += 3) {
-        for (var jj = 0; jj < 3; ++jj) {
+function setColors(gl) {
+    let normals = HeadData.normals;
+    let colors = new Uint8Array(normals.length);
+    let offset = 0;
+    for (let i = 0; i < colors.length; i += 3) {
+        for (let j = 0; j < 3; ++j) {
             colors[offset] = (normals[offset] * 0.5 + 0.5) * 255;
             ++offset;
         }
     }
-    gl.bufferData(
-        gl.ARRAY_BUFFER, colors, gl.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STATIC_DRAW);
 }
 
 main();
