@@ -122,7 +122,6 @@ const vec = {
     }
 };
 
-
 const m4 = {
 
     lookAt: function(cameraPosition, target, up) {
@@ -375,10 +374,10 @@ const m4 = {
     },
 
     vectorMultiply: function(v, m) {
-        var dst = [];
-        for (var i = 0; i < 4; ++i) {
+        let dst = [];
+        for (let i = 0; i < 4; ++i) {
             dst[i] = 0.0;
-            for (var j = 0; j < 4; ++j) {
+            for (let j = 0; j < 4; ++j) {
                 dst[i] += v[j] * m[j * 4 + i];
             }
         }
