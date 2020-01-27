@@ -7,7 +7,7 @@
         <script src="../libs/gl-matrix/gl-matrix.js"></script>
         <script src="../libs/webgl/base.js"></script>
         <script src="../libs/webgl/figures.js"></script>
-        <script src="js/webgl-draw.js"></script>
+        <script src="js/webgl-draw-1.js"></script>
 
         <script type="text/javascript">
 
@@ -16,9 +16,9 @@
                     const canvas = document.getElementById("webglcanvas");
                     const gl = base.init(canvas);
                     base.initViewPort(gl, canvas);
-                    [projectionMatrix, modelViewMatrix] = base.initMatrices(canvas);
+                    [projectionMatrix, modelViewMatrix] = base.initMatrices2D(canvas);
                     const square = figures.square(gl);
-                    let shaderProgram = base.initShaders(gl);
+                    let shaderProgram = base.initShaders(gl, base.fragmentShaderSource2d, base.vertexShaderSource2d);
                     draw(gl, square, shaderProgram, projectionMatrix, modelViewMatrix);
                 }
             );

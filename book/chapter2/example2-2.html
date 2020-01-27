@@ -1,0 +1,45 @@
+<html lang="en">
+
+    <head>
+    <title>Programming 3D Applications in HTML5 and WebGL &mdash; Example 2-2</title>
+    <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+        <script src="../libs/jquery-1.9.1/jquery-1.9.1.js"></script>
+        <script src="../libs/gl-matrix/gl-matrix.js"></script>
+        <script src="../libs/requestAnimationFrame/RequestAnimationFrame.js"></script>
+        <script src="../libs/webgl/base.js"></script>
+        <script src="../libs/webgl/figures.js"></script>
+        <script src="js/webgl-draw-2.js"></script>
+        <script type="text/javascript">
+
+
+
+
+            $(document).ready(
+                    function() {
+                        let canvas = document.getElementById("webglcanvas");
+                        let gl = base.init(canvas);
+                        base.initViewPort(gl, canvas);
+                        let drawingContext = {};
+                        [drawingContext.modelViewMatrix, drawingContext.projectionMatrix, drawingContext.rotationAxis] = base.initMatrices3D(canvas);
+                        let cube = figures.cube(gl);
+                        drawingContext.shaderProgram = base.initShaders(gl, base.fragmentShaderSource, base.vertexShaderSource);
+                        drawingContext.curTime = Date.now();
+                        drawingContext.duration = 5000;
+                        base.run(gl, cube, drawingContext);
+                    }
+            );
+
+        </script>
+
+
+    </head>
+
+
+    <body>
+
+        <canvas id="webglcanvas" style="border: none;" width="500" height="500"></canvas>
+
+    </body>
+
+</html>
+

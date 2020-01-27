@@ -21,7 +21,7 @@ base.initViewPort = function (gl, canvas) {
     gl.viewport(0, 0, canvas.width, canvas.height);
 };
 
-base.initMatrices = function (canvas) {
+base.initMatrices2D = function (canvas) {
     let projectionMatrix, modelViewMatrix;
     modelViewMatrix = mat4.create();
     mat4.translate(modelViewMatrix, modelViewMatrix, [0, 0, -3]);
@@ -29,6 +29,18 @@ base.initMatrices = function (canvas) {
     projectionMatrix = mat4.create();
     mat4.perspective(projectionMatrix, Math.PI / 4, canvas.width / canvas.height, 1, 10000);
     return [projectionMatrix, modelViewMatrix]
+};
+
+base.initMatrices3D = function (canvas) {
+    let modelViewMatrix = mat4.create();
+    mat4.translate(modelViewMatrix, modelViewMatrix, [0, 0, -8]);
+
+    let projectionMatrix = mat4.create();
+    mat4.perspective(projectionMatrix, Math.PI / 4, canvas.width / canvas.height, 1, 10000);
+
+    let rotationAxis = vec3.create();
+    vec3.normalize(rotationAxis, [1, 1, 1]);
+    return [modelViewMatrix, projectionMatrix, rotationAxis]
 };
 
 base.createShader = function (gl, str, type) {
@@ -52,10 +64,10 @@ base.createShader = function (gl, str, type) {
     return shader;
 };
 
-base.initShaders = function (gl) {
+base.initShaders = function (gl, fragmentSrc, vertexSrc) {
 
-    let fragmentShader = base.createShader(gl, fragmentShaderSource, "fragment");
-    let vertexShader = base.createShader(gl, vertexShaderSource, "vertex");
+    let fragmentShader = base.createShader(gl, fragmentSrc, "fragment");
+    let vertexShader = base.createShader(gl, vertexSrc, "vertex");
 
     let shaderProgram = gl.createProgram();
     gl.attachShader(shaderProgram, vertexShader);
@@ -70,7 +82,22 @@ base.initShaders = function (gl) {
     return shaderProgram;
 };
 
-const vertexShaderSource =
+base.animate = function(drawingContext) {
+    let now = Date.now();
+    let deltat = now - drawingContext.curTime;
+    drawingContext.curTime = now;
+    let fract = deltat / drawingContext.duration;
+    let angle = Math.PI * 2 * fract;
+    mat4.rotate(drawingContext.modelViewMatrix, drawingContext.modelViewMatrix, angle, drawingContext.rotationAxis);
+};
+
+base.run = function(gl, cube, drawingContext, animationContext) {
+    requestAnimationFrame(function() { base.run(gl, cube, drawingContext); });
+    draw(gl, cube, drawingContext);
+    base.animate(drawingContext, animationContext);
+};
+
+base.vertexShaderSource2d =
     "    attribute vec3 vertexPos;\n" +
     "    uniform mat4 modelViewMatrix;\n" +
     "    uniform mat4 projectionMatrix;\n" +
@@ -78,7 +105,25 @@ const vertexShaderSource =
     "        gl_Position = projectionMatrix * modelViewMatrix * vec4(vertexPos, 1.0);\n" +
     "    }\n";
 
-const fragmentShaderSource =
+base.fragmentShaderSource2d =
     "    void main(void) {\n" +
     "       gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);\n" +
-        "}\n";
+    "}\n";
+
+base.vertexShaderSource =
+    "    attribute vec3 vertexPos;\n" +
+    "    attribute vec4 vertexColor;\n" +
+    "    uniform mat4 modelViewMatrix;\n" +
+    "    uniform mat4 projectionMatrix;\n" +
+    "    varying vec4 vColor;\n" +
+    "    void main(void) {\n" +
+    "        gl_Position = projectionMatrix * modelViewMatrix * vec4(vertexPos, 1.0);\n" +
+    "        vColor = vertexColor;\n" +
+    "    }\n";
+
+base.fragmentShaderSource =
+    "    precision mediump float;\n" +
+    "    varying vec4 vColor;\n" +
+    "    void main(void) {\n" +
+    "       gl_FragColor = vColor;\n" +
+         "}\n";
